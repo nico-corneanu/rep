@@ -12,7 +12,6 @@ public class User {
         private String subscriptionType;
         private Map<String, Integer> history;
         private ArrayList<String> favoriteMovies;
-
     public Map<String, Double> getRatings() {
         return ratings;
     }

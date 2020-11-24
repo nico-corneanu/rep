@@ -1,15 +1,23 @@
 package Classes;
 
 import actor.ActorsAwards;
+import entertainment.Genre;
 import javassist.compiler.ast.Pair;
 import net.sf.saxon.type.StringConverter;
 import org.checkerframework.checker.units.qual.A;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.JSONStreamAware;
 
 import javax.sound.midi.Soundbank;
 import java.sql.SQLOutput;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import utils.*;
+
+import static Classes.MyPair.ratingCompareDES;
+import static utils.Utils.stringToGenre;
 
 public class Action {
         private int actionId;
@@ -61,9 +69,6 @@ public class Action {
          * Filters used for selecting videos
          */
         private List<List<String>> filters;
-
-        //private String year;
-
         //recomandari
         public Action(final int actionId, final String actionType,
                          final String type, final String username, final String genre) {
@@ -173,13 +178,10 @@ public class Action {
             return filters;
         }
 
-        //public String getYear() {return year;}
-
-
-
         // methods
         public void doAction(JSONArray result, ArrayList<Movies> movies, ArrayList<User> users, ArrayList<Shows> shows,
                              ArrayList<Actors> actors) {
+            //ArrayList<MyPair> V = new ArrayList<>();
             if (actionType.equals("command")) {
                 if (type.equals("favorite")) {
                     for (User u : users) {
@@ -208,6 +210,9 @@ public class Action {
                         }
                     }
                 } else if (type.equals("view")) {
+//                    for(Genre gen : Genre.values()) {
+//                        V.add(new MyPair(gen.name(),0));
+//                    }
                     for (User u : users) {
                         if (u.getUsername().equals(username)) {
                             u.view(title);
@@ -215,6 +220,31 @@ public class Action {
                             message.put("id", actionId);
                             message.put("message", "success -> " + title + " was viewed with total views of " + u.getHistory().get(title));
                             result.add(message);
+//                            for (Movies m : movies) {
+//                                if (m.getTitle().equals(title)) {
+//                                    //m.viewed();
+//                                    for (MyPair p : V) {
+//                                    for (String g : m.getGenres()) {
+//                                            if (p.name.equals(stringToGenre(g).name())) {
+//                                                p.value++;
+//                                                System.out.println(p.value);
+//                                            }
+//                                        }
+//                                    }
+//                                }
+//                            }
+//                            for (Shows s : shows) {
+//                                if (s.getTitle().equals(title)) {
+//                                    s.viewed();
+//                                    for (String g : s.getGenres()) {
+//                                        for (MyPair p : V) {
+//                                            if (p.name.equals(stringToGenre(g).name())) {
+//                                                p.value++;
+//                                            }
+//                                        }
+//                                    }
+//                                }
+//                            }
                         }
                     }
                 } else if (type.equals("rating")) {
@@ -251,7 +281,6 @@ public class Action {
                                 for (Shows s : shows) {
                                     if (s.getTitle().equals(title)) {
                                         int flag = u.giveRatingShow(s, grade, seasonNumber);
-                                        //u.giveRatingShow(s, grade, seasonNumber);
                                         if (flag == 1) {
                                             JSONObject message = new JSONObject();
                                             message.put("id", actionId);
@@ -276,13 +305,13 @@ public class Action {
                     }
                 }
             } else if (actionType.equals("query")) {
-                if (actors.size() == 0) {
-                    JSONObject message = new JSONObject();
-                    message.put("id", actionId);
-                    message.put("message", "Query result: []");
-                    result.add(message);
-                } else {
-                    if (objectType.equals("actors")) {
+                if (objectType.equals("actors")) {
+                    if (actors.size() == 0) {
+                        JSONObject message = new JSONObject();
+                        message.put("id", actionId);
+                        message.put("message", "Query result: []");
+                        result.add(message);
+                    } else {
                         if (criteria.equals("average")) {
                             ArrayList<MyPair> averages = new ArrayList<>();
                             for (Actors a : actors) {
@@ -310,7 +339,7 @@ public class Action {
                             if (sortType.equals("asc")) {
                                 Collections.sort(averages, MyPair.ratingCompareASC);
                             } else {
-                                Collections.sort(averages, MyPair.ratingCompareDES);
+                                Collections.sort(averages, ratingCompareDES);
                             }
                             String queryMessage = "Query result: [";
                             for (int i = 0; i < averages.size(); ++i) {
@@ -359,14 +388,6 @@ public class Action {
                                 }
                                 sum = 0;
                             }
-//                            boolean bool = false;
-//                            for(int i = 0; i < awards_pairs.size(); i++) {
-//                                for(int j = 0; j < awards_pairs.size(); j++) {
-//                                    if(awards_pairs.get(i).value == awards_pairs.get(j).value) {
-//                                        bool = true;
-//                                    }
-//                                }
-//                            }
                             if (sortType.equals("asc")) {
                                 Collections.sort(awards_pairs, MyPair.nameCompare);
                             } else {
@@ -375,7 +396,7 @@ public class Action {
                             if (sortType.equals("asc")) {
                                 Collections.sort(awards_pairs, MyPair.ratingCompareASC);
                             } else {
-                                Collections.sort(awards_pairs, MyPair.ratingCompareDES);
+                                Collections.sort(awards_pairs, ratingCompareDES);
                             }
 
                             String queryMessage = "Query result: [";
@@ -438,72 +459,83 @@ public class Action {
                             message.put("message", queryMessage);
                             result.add(message);
                         }
-                    } else if (objectType.equals("movies")) {
-                        if (criteria.equals("ratings")) {
-                            ArrayList<MyPair> ratings_pairs = new ArrayList<>();
-                            boolean bool = false;
-                            int count1 = 0, count2 = 0;
-                            for (Movies m : movies) {
-                                if (!m.getRating().isNaN()) {
+                    }
+
+                } else if (objectType.equals("movies")) {
+                    if (criteria.equals("ratings")) {
+                        ArrayList<MyPair> ratings_pairs = new ArrayList<>();
+                        int count1 = 0, count2 = 0;
+                        for (Movies m : movies) {
+                            if (!m.getRating().isNaN()) {
+                                for (List<String> list : getFilters()) {
+                                    if (list != null) {
+                                        for (String s : list) {
+                                            if ((m.getGenres().contains(s))) {
+                                                count1++;
+                                            }
+                                            Pattern p = Pattern.compile("([0-9])");
+                                            Matcher matcher = p.matcher(s);
+                                            if (matcher.find()) {
+                                                number = Integer.parseInt(s);
+                                                if (number == m.getYear()) {
+                                                    count2++;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                if ((count1 > 0) && (count2 > 0)) {
+                                    ratings_pairs.add(new MyPair(m.getTitle(), m.getRating()));
+                                }
+                            }
+                        }
+                        Collections.sort(ratings_pairs, MyPair.nameCompare);
+                        if (sortType.equals("asc")) {
+                            Collections.sort(ratings_pairs, MyPair.nameCompare);
+                            Collections.sort(ratings_pairs, MyPair.ratingCompareASC);
+                        } else {
+                            Collections.sort(ratings_pairs, MyPair.nameCompare);
+                            Collections.sort(ratings_pairs, ratingCompareDES);
+                        }
+                        String queryMessage = "Query result: [";
+                        for (int i = 0; i < ratings_pairs.size(); ++i) {
+                            if (i < number) {
+                                queryMessage += ratings_pairs.get(i).name + ", ";
+                            } else {
+                                break;
+                            }
+                        }
+                        if (ratings_pairs.size() == 0) {
+                            queryMessage = queryMessage.substring(0, queryMessage.length());
+                        } else {
+                            queryMessage = queryMessage.substring(0, queryMessage.length() - 2);
+                        }
+                        queryMessage = queryMessage + "]";
+                        JSONObject message = new JSONObject();
+                        message.put("id", actionId);
+                        message.put("message", queryMessage);
+                        result.add(message);
+                    } else if (criteria.equals("favorite")) {
+                        ArrayList<MyPair> favorite_pairs = new ArrayList<>();
+                        int count1 = 0, count2 = 0;
+                        int number_favorite = 0;
+                        for (Movies m : movies) {
+                            for (User u : users) {
+                                if (u.getFavoriteMovies().contains(m.getTitle())) {
+                                    number_favorite++;
                                     for (List<String> list : getFilters()) {
                                         if (list != null) {
+
                                             for (String s : list) {
                                                 if (s != null) {
                                                     if ((m.getGenres().contains(s))) {
                                                         count1++;
                                                     }
-                                                    if (s.equals(m.getYear())) {
-                                                        count2++;
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                    if ((count1 > 0) || (count2 > 0)) {
-                                        ratings_pairs.add(new MyPair(m.getTitle(), m.getRating()));
-                                    }
-                                }
-                            }
-                            Collections.sort(ratings_pairs, MyPair.nameCompare);
-                            if (sortType.equals("asc")) {
-                                Collections.sort(ratings_pairs, MyPair.ratingCompareASC);
-                            } else {
-                                Collections.sort(ratings_pairs, MyPair.ratingCompareDES);
-                            }
-                            String queryMessage = "Query result: [";
-                            for (int i = 0; i < ratings_pairs.size(); ++i) {
-                                if (i < number) {
-                                    queryMessage += ratings_pairs.get(i).name + ", ";
-                                } else {
-                                    break;
-                                }
-                            }
-                            if (ratings_pairs.size() == 0) {
-                                queryMessage = queryMessage.substring(0, queryMessage.length());
-                            } else {
-                                queryMessage = queryMessage.substring(0, queryMessage.length() - 2);
-                            }
-                            queryMessage = queryMessage + "]";
-                            JSONObject message = new JSONObject();
-                            message.put("id", actionId);
-                            message.put("message", queryMessage);
-                            result.add(message);
-                        } else if (criteria.equals("favorite")) {
-                            ArrayList<MyPair> favorite_pairs = new ArrayList<>();
-                            int count1 = 0, count2 = 0;
-                            int number_favorite = 0;
-                            for (Movies m : movies) {
-                                for (User u : users) {
-                                    if (u.getFavoriteMovies().contains(m.getTitle())) {
-                                        number_favorite++;
-                                        for (List<String> list : getFilters()) {
-                                            if (list != null) {
-                                                for (String s : list) {
-                                                    if (s != null) {
-                                                        if ((m.getGenres().contains(s))) {
-                                                            count1++;
-                                                        }
-                                                        if (s.equals(m.getYear())) {
+                                                    Pattern p = Pattern.compile("([0-9])");
+                                                    Matcher matcher = p.matcher(s);
+                                                    if (matcher.find()) {
+                                                        number = Integer.parseInt(s);
+                                                        if (number == m.getYear()) {
                                                             count2++;
                                                         }
                                                     }
@@ -512,80 +544,658 @@ public class Action {
                                         }
                                     }
                                 }
-                                if (count1 > 0 || count2 > 0) {
-                                    favorite_pairs.add(new MyPair(m.getTitle(), number_favorite));
-                                }
-                                number_favorite = 0;
-                                count1 = 0;
-                                count2 = 0;
                             }
-                            Collections.sort(favorite_pairs, MyPair.nameCompare);
-                            Collections.sort(favorite_pairs, MyPair.ratingCompareDES);
+                            if (count1 > 0 && count2 > 0) {
+                                favorite_pairs.add(new MyPair(m.getTitle(), number_favorite));
+                            }
+                            number_favorite = 0;
+                            count1 = 0;
+                            count2 = 0;
+                        }
 
-                            String queryMessage = "Query result: [";
-                            for (int i = 0; i < favorite_pairs.size(); ++i) {
-                                if (i < number) {
-                                    queryMessage += favorite_pairs.get(i).name + ", ";
-                                } else {
-                                    break;
+                        Collections.sort(favorite_pairs, MyPair.nameCompare);
+                        if (sortType.equals("asc")) {
+                            Collections.sort(favorite_pairs, MyPair.nameCompare);
+                            Collections.sort(favorite_pairs, MyPair.ratingCompareASC);
+                        } else {
+                            Collections.sort(favorite_pairs, MyPair.nameCompareDesc);
+                            Collections.sort(favorite_pairs, ratingCompareDES);
+                        }
+
+                        String queryMessage = "Query result: [";
+                        for (int i = 0; i < favorite_pairs.size(); ++i) {
+                            if (i < number) {
+                                queryMessage += favorite_pairs.get(i).name + ", ";
+                            } else {
+                                break;
+                            }
+                        }
+                        if (favorite_pairs.size() == 0) {
+                            queryMessage = queryMessage.substring(0, queryMessage.length());
+                        } else {
+                            queryMessage = queryMessage.substring(0, queryMessage.length() - 2);
+                        }
+                        queryMessage = queryMessage + "]";
+                        JSONObject message = new JSONObject();
+                        message.put("id", actionId);
+                        message.put("message", queryMessage);
+                        result.add(message);
+                    } else if (criteria.equals("longest")) {
+                        ArrayList<MyPair> longest_pairs = new ArrayList<>();
+                        int count1 = 0, count2 = 0, count = 0;
+                        for (Movies m : movies) {
+                            boolean flagYear = true;
+                            boolean flagGen = true;
+                            for (List<String> list : getFilters()) {
+                                if (list != null) {
+                                    if (list.equals(getFilters().get(0)) && list.get(0) != null) {
+                                        int the_year = Integer.parseInt(list.get(0));
+                                        if (m.getYear() != the_year) {
+                                            flagYear = false;
+                                        }
+                                    } else if (flagYear) {
+                                        for (int i = 0; i < list.size(); ++i) {
+                                            System.out.println(list.get(i));
+                                            if (list.get(i) != null) {
+                                                if (!m.getGenres().contains(list.get(i))) {
+                                                    flagGen = false;
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
-                            if (favorite_pairs.size() == 0) {
-                                queryMessage = queryMessage.substring(0, queryMessage.length());
-                            } else {
-                                queryMessage = queryMessage.substring(0, queryMessage.length() - 2);
+                            if (flagYear && flagGen) {
+                                longest_pairs.add(new MyPair(m.getTitle(), m.getDuration()));
                             }
-                            queryMessage = queryMessage + "]";
-                            JSONObject message = new JSONObject();
-                            message.put("id", actionId);
-                            message.put("message", queryMessage);
-                            result.add(message);
-                        } else if (objectType.equals("shows")) {
-                            if (criteria.equals("ratings")) {
-                                boolean bool = false;
-                                ArrayList<MyPair> ratings_pairs = new ArrayList<>();
-                                for (Shows s : shows) {
-                                    if (!s.getRating().isNaN()) {
-                                        for (List<String> list : getFilters()) {
-                                            if (list != null) {
-                                                for (String filter : list) {
-                                                    if (filter != null) {
-                                                        if (filter.equals(s.getYear()) && s.getGenres().contains(s)) {
-                                                            ratings_pairs.add(new MyPair(s.getTitle(), s.calculateRating()));
-                                                        }
+                        }
+                        if (sortType.equals("asc")) {
+                            Collections.sort(longest_pairs, MyPair.nameCompare);
+                            Collections.sort(longest_pairs, MyPair.ratingCompareASC);
+                        } else {
+                            Collections.sort(longest_pairs, MyPair.nameCompareDesc);
+                            Collections.sort(longest_pairs, ratingCompareDES);
+                        }
+                        String queryMessage = "Query result: [";
+                        for (int i = 0; i < longest_pairs.size(); ++i) {
+                            if (i < number) {
+                                queryMessage += longest_pairs.get(i).name + ", ";
+                            } else {
+                                break;
+                            }
+                        }
+                        if (longest_pairs.size() == 0) {
+                            queryMessage = queryMessage.substring(0, queryMessage.length());
+                        } else {
+                            queryMessage = queryMessage.substring(0, queryMessage.length() - 2);
+                        }
+                        //queryMessage = queryMessage.substring(0, queryMessage.length() - 2);
+                        queryMessage = queryMessage + "]";
+                        JSONObject message = new JSONObject();
+                        message.put("id", actionId);
+                        message.put("message", queryMessage);
+                        result.add(message);
+                    } else if (criteria.equals("most_viewed")) {
+                        ArrayList<MyPair> most_viewed_pairs = new ArrayList<>();
+
+                        for (Movies m : movies) {
+                            int sum = 0;
+                            for (User u : users) {
+                                if (u.getHistory().containsKey(m.getTitle())) {
+                                    for (Map.Entry<String, Integer> entry : u.getHistory().entrySet()) {
+                                        sum = entry.getValue();
+                                    }
+                                }
+                            }
+                            boolean flagYear = true;
+                            boolean flagGen = true;
+                            for (List<String> list : getFilters()) {
+                                if (list != null) {
+                                    if (list.equals(getFilters().get(0)) && list.get(0) != null) {
+                                        int the_year = Integer.parseInt(list.get(0));
+                                        if (m.getYear() != the_year) {
+                                            flagYear = false;
+                                        }
+                                    } else if (flagYear) {
+                                        for (int i = 0; i < list.size(); ++i) {
+                                            System.out.println(list.get(i));
+                                            if (list.get(i) != null) {
+                                                if (!m.getGenres().contains(list.get(i))) {
+                                                    flagGen = false;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            if (sum > 0) {
+                                if (flagYear && flagGen) {
+                                    most_viewed_pairs.add(new MyPair(m.getTitle(), sum));
+                                }
+                            }
+
+                        }
+                        if (sortType.equals("asc")) {
+                            Collections.sort(most_viewed_pairs, MyPair.nameCompare);
+                            Collections.sort(most_viewed_pairs, MyPair.ratingCompareASC);
+                        } else {
+                            Collections.sort(most_viewed_pairs, MyPair.nameCompareDesc);
+                            Collections.sort(most_viewed_pairs, ratingCompareDES);
+                        }
+                        String queryMessage = "Query result: [";
+                        for (int i = 0; i < most_viewed_pairs.size(); ++i) {
+                            if (i < number) {
+                                queryMessage += most_viewed_pairs.get(i).name + ", ";
+                            } else {
+                                break;
+                            }
+                        }
+                        if (most_viewed_pairs.size() == 0) {
+                            queryMessage = queryMessage.substring(0, queryMessage.length());
+                        } else {
+                            queryMessage = queryMessage.substring(0, queryMessage.length() - 2);
+                        }
+                        queryMessage = queryMessage + "]";
+                        JSONObject message = new JSONObject();
+                        message.put("id", actionId);
+                        message.put("message", queryMessage);
+                        result.add(message);
+                    }
+                } else if (objectType.equals("shows")) {
+                    if (criteria.equals("ratings")) {
+                        ArrayList<MyPair> ratings_pairs = new ArrayList<>();
+                        int count1 = 0, count2 = 0, count = 0;
+                        for (Shows s : shows) {
+                            boolean flagYear = true;
+                            boolean flagGen = true;
+                            if (s.calculateRating() != 0) {
+                                System.out.println(s.getTitle());
+                                for (List<String> list : getFilters()) {
+                                    if (list != null) {
+                                        if (list.equals(getFilters().get(0)) && list.get(0) != null) {
+                                            int the_year = Integer.parseInt(list.get(0));
+                                            if (s.getYear() != the_year) {
+                                                flagYear = false;
+                                            }
+                                        } else if (flagYear) {
+                                            for (int i = 0; i < list.size(); ++i) {
+                                                System.out.println(list.get(i));
+                                                if (list.get(i) != null) {
+                                                    if (!s.getGenres().contains(list.get(i))) {
+                                                        flagGen = false;
                                                     }
                                                 }
                                             }
                                         }
                                     }
                                 }
-                                Collections.sort(ratings_pairs, MyPair.nameCompare);
-                                if (sortType.equals("asc")) {
-                                    Collections.sort(ratings_pairs, MyPair.ratingCompareASC);
-                                } else {
-                                    Collections.sort(ratings_pairs, MyPair.ratingCompareDES);
+                                if (flagYear && flagGen) {
+                                    ratings_pairs.add(new MyPair(s.getTitle(), s.calculateRating()));
                                 }
-                                String queryMessage = "Query result: [";
-                                for (int i = 0; i < ratings_pairs.size(); ++i) {
-                                    if (i < number) {
-                                        queryMessage += ratings_pairs.get(i).name + ", ";
-                                    } else {
+                            }
+
+                        }
+
+                        if (sortType.equals("asc")) {
+                            Collections.sort(ratings_pairs, MyPair.nameCompare);
+                            Collections.sort(ratings_pairs, MyPair.ratingCompareASC);
+                        } else {
+                            Collections.sort(ratings_pairs, MyPair.nameCompareDesc);
+                            Collections.sort(ratings_pairs, ratingCompareDES);
+                        }
+                        String queryMessage = "Query result: [";
+                        for (int i = 0; i < ratings_pairs.size(); ++i) {
+                            if (i < number) {
+                                queryMessage += ratings_pairs.get(i).name + ", ";
+                            } else {
+                                break;
+                            }
+                        }
+                        if (ratings_pairs.size() == 0) {
+                            queryMessage = queryMessage.substring(0, queryMessage.length());
+                        } else {
+                            queryMessage = queryMessage.substring(0, queryMessage.length() - 2);
+                        }
+                        //queryMessage = queryMessage.substring(0, queryMessage.length() - 2);
+                        queryMessage = queryMessage + "]";
+                        JSONObject message = new JSONObject();
+                        message.put("id", actionId);
+                        message.put("message", queryMessage);
+                        result.add(message);
+                    } else if (criteria.equals("favorite")) {
+                        ArrayList<MyPair> favorite_pairs = new ArrayList<>();
+                        int number_favorite = 0;
+                        for (Shows s : shows) {
+                            for (User u : users) {
+                                if (u.getFavoriteMovies().contains(s.getTitle())) {
+                                    number_favorite++;
+                                }
+                            }
+                            boolean flagYear = true;
+                            boolean flagGen = true;
+                            System.out.println(s.getTitle());
+                            for (List<String> list : getFilters()) {
+                                if (list != null) {
+                                    if (list.equals(getFilters().get(0)) && list.get(0) != null) {
+                                        int the_year = Integer.parseInt(list.get(0));
+                                        if (s.getYear() != the_year) {
+                                            flagYear = false;
+                                        }
+                                    } else if (flagYear) {
+                                        for (int i = 0; i < list.size(); ++i) {
+                                            System.out.println(list.get(i));
+                                            if (list.get(i) != null) {
+                                                if (!s.getGenres().contains(list.get(i))) {
+                                                    flagGen = false;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            if (number_favorite > 0) {
+                                if (flagYear && flagGen) {
+                                    favorite_pairs.add(new MyPair(s.getTitle(), number_favorite));
+                                }
+                            }
+
+                        }
+
+                        //Collections.sort(favorite_pairs, MyPair.nameCompare);
+                        if (sortType.equals("asc")) {
+                            Collections.sort(favorite_pairs, MyPair.nameCompare);
+                            Collections.sort(favorite_pairs, MyPair.ratingCompareASC);
+                        } else {
+                            Collections.sort(favorite_pairs, MyPair.nameCompareDesc);
+                            Collections.sort(favorite_pairs, ratingCompareDES);
+                        }
+                        String queryMessage = "Query result: [";
+                        for (int i = 0; i < favorite_pairs.size(); ++i) {
+                            if (i < number) {
+                                queryMessage += favorite_pairs.get(i).name + ", ";
+                            } else {
+                                break;
+                            }
+                        }
+                        if (favorite_pairs.size() == 0) {
+                            queryMessage = queryMessage.substring(0, queryMessage.length());
+                        } else {
+                            queryMessage = queryMessage.substring(0, queryMessage.length() - 2);
+                        }
+                        queryMessage = queryMessage + "]";
+                        JSONObject message = new JSONObject();
+                        message.put("id", actionId);
+                        message.put("message", queryMessage);
+                        result.add(message);
+                    } else if (criteria.equals("longest")) {
+                        ArrayList<MyPair> longest_pairs = new ArrayList<>();
+                        for (Shows s : shows) {
+                            int sum = 0;
+                            for (int i = 0; i < s.getSeasons().size(); i++) {
+                                sum += s.getSeasons().get(i).getDuration();
+                            }
+                            boolean flagYear = true;
+                            boolean flagGen = true;
+                            System.out.println(s.getTitle());
+                            for (List<String> list : getFilters()) {
+                                if (list != null) {
+                                    if (list.equals(getFilters().get(0)) && list.get(0) != null) {
+                                        int the_year = Integer.parseInt(list.get(0));
+                                        if (s.getYear() != the_year) {
+                                            flagYear = false;
+                                        }
+                                    } else if (flagYear) {
+                                        for (int i = 0; i < list.size(); ++i) {
+                                            System.out.println(list.get(i));
+                                            if (list.get(i) != null) {
+                                                if (!s.getGenres().contains(list.get(i))) {
+                                                    flagGen = false;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            if (sum > 0) {
+                                if (flagYear && flagGen) {
+                                    longest_pairs.add(new MyPair(s.getTitle(), sum));
+                                }
+                            }
+
+                        }
+
+                        if (sortType.equals("asc")) {
+                            Collections.sort(longest_pairs, MyPair.nameCompare);
+                            Collections.sort(longest_pairs, MyPair.ratingCompareASC);
+                        } else {
+                            Collections.sort(longest_pairs, MyPair.nameCompareDesc);
+                            Collections.sort(longest_pairs, ratingCompareDES);
+                        }
+                        String queryMessage = "Query result: [";
+                        for (int i = 0; i < longest_pairs.size(); ++i) {
+                            if (i < number) {
+                                queryMessage += longest_pairs.get(i).name + ", ";
+                            } else {
+                                break;
+                            }
+                        }
+                        if (longest_pairs.size() == 0) {
+                            queryMessage = queryMessage.substring(0, queryMessage.length());
+                        } else {
+                            queryMessage = queryMessage.substring(0, queryMessage.length() - 2);
+                        }
+                        queryMessage = queryMessage + "]";
+                        JSONObject message = new JSONObject();
+                        message.put("id", actionId);
+                        message.put("message", queryMessage);
+                        result.add(message);
+                    } else if (criteria.equals("most_viewed")) {
+                        ArrayList<MyPair> most_viewed_pairs = new ArrayList<>();
+
+                        for (Shows s : shows) {
+                            int sum = 0;
+                            for (User u : users) {
+                                if (u.getHistory().containsKey(s.getTitle())) {
+                                    for (Map.Entry<String, Integer> entry : u.getHistory().entrySet()) {
+                                        sum = entry.getValue();
+                                    }
+                                }
+                            }
+                            boolean flagYear = true;
+                            boolean flagGen = true;
+                            System.out.println(s.getTitle());
+                            for (List<String> list : getFilters()) {
+                                if (list != null) {
+                                    if (list.equals(getFilters().get(0)) && list.get(0) != null) {
+                                        int the_year = Integer.parseInt(list.get(0));
+                                        if (s.getYear() != the_year) {
+                                            flagYear = false;
+                                        }
+                                    } else if (flagYear) {
+                                        for (int i = 0; i < list.size(); ++i) {
+                                            System.out.println(list.get(i));
+                                            if (list.get(i) != null) {
+                                                if (!s.getGenres().contains(list.get(i))) {
+                                                    flagGen = false;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            if (sum > 0) {
+                                if (flagYear && flagGen) {
+                                    most_viewed_pairs.add(new MyPair(s.getTitle(), sum));
+                                }
+                            }
+
+                        }
+                        if (sortType.equals("asc")) {
+                            Collections.sort(most_viewed_pairs, MyPair.nameCompare);
+                            Collections.sort(most_viewed_pairs, MyPair.ratingCompareASC);
+                        } else {
+                            Collections.sort(most_viewed_pairs, MyPair.nameCompareDesc);
+                            Collections.sort(most_viewed_pairs, ratingCompareDES);
+                        }
+                        String queryMessage = "Query result: [";
+                        for (int i = 0; i < most_viewed_pairs.size(); ++i) {
+                            if (i < number) {
+                                queryMessage += most_viewed_pairs.get(i).name + ", ";
+                            } else {
+                                break;
+                            }
+                        }
+                        if (most_viewed_pairs.size() == 0) {
+                            queryMessage = queryMessage.substring(0, queryMessage.length());
+                        } else {
+                            queryMessage = queryMessage.substring(0, queryMessage.length() - 2);
+                        }
+                        queryMessage = queryMessage + "]";
+                        JSONObject message = new JSONObject();
+                        message.put("id", actionId);
+                        message.put("message", queryMessage);
+                        result.add(message);
+                    }
+                } else if (objectType.equals("users")) {
+                    if (criteria.equals("num_ratings")) {
+                        ArrayList<MyPair> num_ratings = new ArrayList<>();
+                        for (User u : users) {
+                            if(!u.getRatings().isEmpty()) {
+                                num_ratings.add(new MyPair(u.getUsername(), u.getRatings().size()));
+                            }
+                        }
+                        if (sortType.equals("asc")) {
+                            Collections.sort(num_ratings, MyPair.nameCompare);
+                            Collections.sort(num_ratings, MyPair.ratingCompareASC);
+                        } else {
+                            Collections.sort(num_ratings, MyPair.nameCompareDesc);
+                            Collections.sort(num_ratings, ratingCompareDES);
+                        }
+                        String queryMessage = "Query result: [";
+                        for (int i = 0; i < num_ratings.size(); ++i) {
+                            if (i < number) {
+                                queryMessage += num_ratings.get(i).name + ", ";
+                            } else {
+                                break;
+                            }
+                        }
+                        if (num_ratings.size() == 0) {
+                            queryMessage = queryMessage.substring(0, queryMessage.length());
+                        } else {
+                            queryMessage = queryMessage.substring(0, queryMessage.length() - 2);
+                        }
+                        queryMessage = queryMessage + "]";
+                        JSONObject message = new JSONObject();
+                        message.put("id", actionId);
+                        message.put("message", queryMessage);
+                        result.add(message);
+                    }
+                }
+            } else if (actionType.equals("recommendation")) {
+                if (type.equals("standard")) {
+                    for (User u : users) {
+                        if (u.getUsername().equals(username)) {
+                            boolean flag = true;
+                            for (Movies m : movies) {
+                                if (!u.getHistory().containsKey(m.getTitle())) {
+                                    flag = false;
+                                    JSONObject message = new JSONObject();
+                                    message.put("id", actionId);
+                                    message.put("message", "StandardRecommendation result: " + m.getTitle());
+                                    result.add(message);
+                                    break;
+                                }
+                            }
+                            for (Shows s : shows) {
+                                if (flag) {
+                                    if (!u.getHistory().containsKey(s.getTitle())) {
+                                        JSONObject message = new JSONObject();
+                                        message.put("id", actionId);
+                                        message.put("message", "StandardRecommendation result: " + s.getTitle());
+                                        result.add(message);
                                         break;
                                     }
                                 }
-                                if (ratings_pairs.size() == 0) {
-                                    queryMessage = queryMessage.substring(0, queryMessage.length());
-                                } else {
-                                    queryMessage = queryMessage.substring(0, queryMessage.length() - 2);
-                                }
-                                //queryMessage = queryMessage.substring(0, queryMessage.length() - 2);
-                                queryMessage = queryMessage + "]";
-                                JSONObject message = new JSONObject();
-                                message.put("id", actionId);
-                                message.put("message", queryMessage);
-                                result.add(message);
                             }
                         }
+                    }
+                } else if (type.equals("best_unseen")) {
+                    ArrayList<MyPair> rec_videos = new ArrayList<>();
+                    for (User u : users) {
+                        if(u.getUsername().equals(username)) {
+                            for(Movies m : movies) {
+                                if(!u.getHistory().containsKey(m.getTitle())) {
+                                    rec_videos.add(new MyPair(m.getTitle(), m.getRating()));
+                                }
+                            }
+                            for(Shows s : shows) {
+                                if(!u.getHistory().containsKey(s.getTitle())) {
+                                    rec_videos.add(new MyPair(s.getTitle(), s.calculateRating()));
+                                }
+                            }
+                            Collections.sort(rec_videos, ratingCompareDES);
+                            for(int i = 0; i < rec_videos.size(); i++) {
+                                JSONObject message = new JSONObject();
+                                message.put("id", actionId);
+                                message.put("message", "BestRatedUnseenRecommendation result: " + rec_videos.get(0).name);
+                                result.add(message);
+                                break;
+                            }
+                        }
+                    }
+                } else if(type.equals("popular")) {
+                    ArrayList<MyPair> popular_genres = new ArrayList<>();
+                    for (Genre g : Genre.values()) {
+                        popular_genres.add(new MyPair(g.name(), 0));
+                    }
+                    for (User u : users) {
+                        for (Map.Entry<String, Integer> entry : u.getHistory().entrySet()) {
+                            for (Movies m : movies) {
+                                if (m.getTitle().equals(entry.getKey())) {
+                                    for (MyPair pair : popular_genres) {
+                                        for (String gen : m.getGenres()) {
+                                                if (pair.name.equals(stringToGenre(gen).name())) {
+                                                    pair.value++;
+                                                }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    for(User u : users) {
+                        if (u.getUsername().equals(username) && u.getSubscriptionType().equals("PREMIUM")) {
+                            Collections.sort(popular_genres, ratingCompareDES);
+                            for(int i = 0; i < popular_genres.size(); i++) {
+                                for(Movies m : movies) {
+                                    if(!u.getHistory().containsKey(m.getTitle())) {
+                                        for(String gen : m.getGenres()) {
+                                            if(popular_genres.get(i).name.equals(stringToGenre(gen).name())) {
+                                                JSONObject message = new JSONObject();
+                                                message.put("id", actionId);
+                                                message.put("message", "PopularRecommendation result: " + m.getTitle());
+                                                result.add(message);
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                                for(Shows s : shows) {
+                                    if(!u.getHistory().containsKey(s.getTitle())) {
+                                        for(String gen : s.getGenres()) {
+                                            if(popular_genres.get(i).name.equals(stringToGenre(gen).name())) {
+                                                JSONObject message = new JSONObject();
+                                                message.put("id", actionId);
+                                                message.put("message", "PopularRecommendation result: " + s.getTitle());
+                                                result.add(message);
+                                                break;
+                                            }
+                                            break;
+                                        }
+                                        break;
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                        if (u.getUsername().equals(username) && u.getSubscriptionType().equals("BASIC")) {
+                            JSONObject message = new JSONObject();
+                            message.put("id", actionId);
+                            message.put("message", "PopularRecommendation cannot be applied!");
+                            result.add(message);
+                            break;
+                        }
+                    }
+                } else if (type.equals("favorite")) {
+                    ArrayList<MyPair> favorite_rec = new ArrayList<>();
+                    for (Movies m : movies) {
+                        int number_fav = 0;
+                        boolean bool = false;
+                        for (User u : users) {
+                            if (!(u.getUsername().equals(username))) {
+                                if (u.getFavoriteMovies().contains(m)) {
+                                    number_fav++;
+                                }
+                            }
+                            if (u.getUsername().equals(username) && !u.getHistory().containsKey(m.getTitle()) && u.getSubscriptionType().equals("PREMIUM")) {
+                                 bool = true;
+                            }
+                        }
+                        if(bool == true) {
+                            favorite_rec.add(new MyPair(m.getTitle(), number_fav));
+                        }
+                }
+                    for(Shows s : shows) {
+                        int number_fav = 0;
+                        boolean bool = false;
+                        for(User u : users) {
+                                if (!(u.getUsername().equals(username))) {
+                                    if (u.getFavoriteMovies().contains(s)) {
+                                        number_fav++;
+                                    }
+                                }
+                                if (u.getUsername().equals(username) && !u.getHistory().containsKey(s.getTitle()) && u.getSubscriptionType().equals("PREMIUM")) {
+                                    bool = true;
+                                }
+                        }
+                        if(bool == true) {
+                            favorite_rec.add(new MyPair(s.getTitle(), number_fav));
+                        }
+                    }
+                    if(favorite_rec.size() != 0) {
+                        if (!(favorite_rec.get(0).value == favorite_rec.get(1).value)) {
+                            Collections.sort(favorite_rec, ratingCompareDES);
+                            JSONObject message = new JSONObject();
+                            message.put("id", actionId);
+                            message.put("message", "FavoriteRecommendation result: " + favorite_rec.get(0).name);
+                            result.add(message);
+                        }
+                        else {
+                            JSONObject message = new JSONObject();
+                            message.put("id", actionId);
+                            message.put("message", "FavoriteRecommendation result: " + favorite_rec.get(0).name);
+                            result.add(message);
+                        }
+                    }
+                } else if(type.equals("search")) {
+                    ArrayList<MyPair> search_rec = new ArrayList<>();
+                    for (User u : users) {
+                        if (u.getUsername().equals(username) && u.getSubscriptionType().equals("PREMIUM")) {
+                            for (Movies m : movies) {
+                                if (!u.getHistory().containsKey(m.getTitle())) {
+                                    if (m.getGenres().contains(genre)) {
+                                        search_rec.add(new MyPair(m.getTitle(), m.getRating()));
+                                    }
+                                }
+                            }
+                            for (Shows s : shows) {
+                                if (!u.getHistory().containsKey(s.getTitle())) {
+                                    if (s.getGenres().contains(genre)) {
+                                        search_rec.add(new MyPair(s.getTitle(), s.calculateRating()));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Collections.sort(search_rec, MyPair.nameCompare);
+                    Collections.sort(search_rec, MyPair.ratingCompareASC);
+                    String queryMessage = "SearchRecommendation result: [";
+                    for (int i = 0; i < search_rec.size(); ++i) {
+                        queryMessage += search_rec.get(i).name + ", ";
+                    }
+                    if (search_rec.size() != 0) {
+                        queryMessage = queryMessage.substring(0, queryMessage.length() - 2);
+                        queryMessage = queryMessage + "]";
+                        JSONObject message = new JSONObject();
+                        message.put("id", actionId);
+                        message.put("message", queryMessage);
+                        result.add(message);
+                }
+                    if(search_rec.size() == 0) {
+                        JSONObject message = new JSONObject();
+                        message.put("id", actionId);
+                        message.put("message", "SearchRecommendation cannot be applied!");
+                        result.add(message);
                     }
                 }
             }

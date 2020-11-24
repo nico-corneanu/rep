@@ -7,6 +7,7 @@ public abstract class Video {
     private final int year;
     private final ArrayList<String> cast;
     private final ArrayList<String> genres;
+    private boolean viewed = false;
     private ArrayList<Double> ratings = new ArrayList<>();
     protected Video(String title, int year, ArrayList<String> cast, ArrayList<String> genres) {
         this.title = title;
@@ -42,5 +43,13 @@ public abstract class Video {
 
     public void setRating(double r) {
         ratings.add(r);
+    }
+
+    public void viewed() {
+        viewed = true;
+    }
+
+    public boolean getViewed() {
+        return viewed;
     }
 }
