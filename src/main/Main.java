@@ -1,14 +1,17 @@
 package main;
 
-import Classes.*;
+
+import classes.Action;
+import classes.Actors;
+import classes.Movies;
+import classes.Shows;
+import classes.User;
 import checker.Checkstyle;
 import checker.Checker;
 import common.Constants;
 import fileio.*;
-import net.sf.saxon.expr.instruct.Actor;
-import org.checkerframework.checker.units.qual.A;
 import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -29,6 +32,7 @@ public final class Main {
 
     /**
      * Call the main checker and the coding style checker
+     *
      * @param args from command line
      * @throws IOException in case of exceptions to reading / writing
      */
@@ -63,41 +67,64 @@ public final class Main {
         Checkstyle test = new Checkstyle();
         test.testCheckstyle();
     }
-    public static void useInput(final Input input, final ArrayList<Actors> actors,final ArrayList<Movies> movies,
-                                final ArrayList<Shows> shows,final ArrayList<User> users,final ArrayList<Action> actions) {
 
-        for(int i = 0; i < input.getActors().size(); i++) {
+    /**
+     *
+     * @param input
+     * @param actors
+     * @param movies
+     * @param shows
+     * @param users
+     * @param actions
+     */
+    public static void useInput(final Input input, final ArrayList<Actors> actors,
+                                final ArrayList<Movies> movies,
+                                final ArrayList<Shows> shows,
+                                final ArrayList<User> users, final ArrayList<Action> actions) {
+
+        for (int i = 0; i < input.getActors().size(); i++) {
             ActorInputData act = input.getActors().get(i);
-            Actors a = new Actors(act.getName(), act.getCareerDescription(), act.getFilmography(), act.getAwards());
+            Actors a = new Actors(act.getName(),
+                    act.getCareerDescription(), act.getFilmography(), act.getAwards());
             actors.add(a);
         }
-        for(int i = 0; i < input.getMovies().size(); i++) {
+        for (int i = 0; i < input.getMovies().size(); i++) {
             MovieInputData act = input.getMovies().get(i);
-            Movies a = new Movies(act.getTitle(), act.getYear(), act.getCast(), act.getGenres(), act.getDuration());
+            Movies a = new Movies(act.getTitle(),
+                    act.getYear(), act.getCast(),
+                    act.getGenres(), act.getDuration());
             movies.add(a);
         }
-        for(int i = 0; i < input.getSerials().size(); i++) {
+        for (int i = 0; i < input.getSerials().size(); i++) {
             SerialInputData act = input.getSerials().get(i);
-            Shows a = new Shows(act.getTitle(), act.getYear(), act.getCast(), act.getGenres(), act.getNumberSeason(), act.getSeasons());
+            Shows a = new Shows(act.getTitle(), act.getYear(),
+                    act.getCast(), act.getGenres(),
+                    act.getNumberSeason(), act.getSeasons());
             shows.add(a);
         }
-        for(int i = 0; i < input.getUsers().size(); i++) {
+        for (int i = 0; i < input.getUsers().size(); i++) {
             UserInputData act = input.getUsers().get(i);
-            User a = new User(act.getUsername(), act.getSubscriptionType(), act.getHistory(), act.getFavoriteMovies());
+            User a = new User(act.getUsername(),
+                    act.getSubscriptionType(),
+                    act.getHistory(), act.getFavoriteMovies());
             users.add(a);
         }
-        for(int i = 0; i < input.getCommands().size(); i++) {
+        for (int i = 0; i < input.getCommands().size(); i++) {
             ActionInputData act = input.getCommands().get(i);
-            if(act.getActionType().equals("command")) {
-                Action a = new Action(act.getActionId(), act.getActionType(), act.getType(), act.getUsername(), act.getTitle(),
+            if (act.getActionType().equals("command")) {
+                Action a = new Action(act.getActionId(),
+                        act.getActionType(), act.getType(),
+                        act.getUsername(), act.getTitle(),
                         act.getGrade(), act.getSeasonNumber());
                 actions.add(a);
-            } else if(act.getActionType().equals("query")) {
-                Action a = new Action(act.getActionId(), act.getActionType(), act.getObjectType(), act.getSortType(),
+            } else if (act.getActionType().equals("query")) {
+                Action a = new Action(act.getActionId(), act.getActionType(),
+                        act.getObjectType(), act.getSortType(),
                         act.getCriteria(), act.getNumber(), act.getFilters());
                 actions.add(a);
             } else {
-                Action a = new Action(act.getActionId(), act.getActionType(), act.getType(), act.getUsername(), act.getGenre());
+                Action a = new Action(act.getActionId(), act.getActionType(),
+                        act.getType(), act.getUsername(), act.getGenre());
                 actions.add(a);
             }
         }

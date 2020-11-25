@@ -1,4 +1,4 @@
-package Classes;
+package classes;
 
 import java.util.ArrayList;
 
@@ -9,7 +9,9 @@ public abstract class Video {
     private final ArrayList<String> genres;
     private boolean viewed = false;
     private ArrayList<Double> ratings = new ArrayList<>();
-    protected Video(String title, int year, ArrayList<String> cast, ArrayList<String> genres) {
+
+    protected Video(final String title, final int year,
+                    final ArrayList<String> cast, final ArrayList<String> genres) {
         this.title = title;
         this.year = year;
         this.cast = cast;
@@ -17,39 +19,50 @@ public abstract class Video {
     }
 
 
-    public String getTitle() {
+    public final String getTitle() {
         return title;
     }
 
-    public int getYear() {
+    public final int getYear() {
         return year;
     }
 
-    public ArrayList<String> getCast() {
+    public final ArrayList<String> getCast() {
         return cast;
     }
 
-    public ArrayList<String> getGenres() {
+    public final ArrayList<String> getGenres() {
         return genres;
     }
 
-    public Double getRating() {
+    /**
+     *
+     * @return
+     */
+    public final Double getRating() {
         double sum = 0;
         for (int i = 0; i < ratings.size(); ++i) {
             sum += ratings.get(i);
         }
-        return sum /  ratings.size();
+        return sum / ratings.size();
     }
 
-    public void setRating(double r) {
+    /**
+     *
+     * @param r
+     */
+    public final void setRating(final double r) {
         ratings.add(r);
     }
 
-    public void viewed() {
+    /**
+     *
+     */
+    public final void viewed() {
         viewed = true;
     }
 
-    public boolean getViewed() {
+    public final boolean getViewed() {
         return viewed;
     }
 }

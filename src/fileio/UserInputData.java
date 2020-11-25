@@ -31,6 +31,7 @@ public final class UserInputData {
 
     //aici pun comm
     private Map<String, Double> ratings;
+
     public UserInputData(final String username, final String subscriptionType,
                          final Map<String, Integer> history,
                          final ArrayList<String> favoriteMovies) {
@@ -63,7 +64,7 @@ public final class UserInputData {
     }
 
     public void view(String movie) {
-        if(history.containsKey(movie)) {
+        if (history.containsKey(movie)) {
             history.put(movie, history.get(movie) + 1);
         } else {
             history.put(movie, 1);
@@ -71,8 +72,8 @@ public final class UserInputData {
     }
 
     public void giveRatingMovie(MovieInputData video, double rating) {
-        if(history.containsKey(video.getTitle())) {
-            if(!ratings.containsKey(video.getTitle())) {
+        if (history.containsKey(video.getTitle())) {
+            if (!ratings.containsKey(video.getTitle())) {
                 ratings.put(video.getTitle(), rating);
                 video.setRating(rating);
             }
@@ -80,9 +81,9 @@ public final class UserInputData {
     }
 
     public void giveRatingShow(SerialInputData video, List<Double> ratings, Season s) {
-        if(history.containsKey(video.getTitle())) {
-            for(int i = 0; i < video.getNumberSeason(); i++) {
-                if(video.getSeasons().get(i).getRatings().get(i).equals(0)) {
+        if (history.containsKey(video.getTitle())) {
+            for (int i = 0; i < video.getNumberSeason(); i++) {
+                if (video.getSeasons().get(i).getRatings().get(i).equals(0)) {
                     video.getSeasons().get(i).setRatings(ratings);
                 }
             }

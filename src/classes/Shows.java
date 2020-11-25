@@ -1,14 +1,24 @@
-package Classes;
+package classes;
 
 import entertainment.Season;
 
 import java.util.ArrayList;
 
-public class Shows extends Video {
+public final class Shows extends Video {
     private int numberOfSeasons = 0;
 
     private ArrayList<Season> seasons = new ArrayList<>();
-    public Shows(String title, int year, ArrayList<String> cast, ArrayList<String> genres,
+
+    /**
+     * @param title
+     * @param year
+     * @param cast
+     * @param genres
+     * @param numberOfSeasons
+     * @param seasons
+     */
+    public Shows(final String title, final int year, final ArrayList<String> cast,
+                 final ArrayList<String> genres,
                  final int numberOfSeasons, final ArrayList<Season> seasons) {
         super(title, year, cast, genres);
         this.numberOfSeasons = numberOfSeasons;
@@ -19,6 +29,11 @@ public class Shows extends Video {
     public int getNumberOfSeasons() {
         return numberOfSeasons;
     }
+
+    /**
+     *
+     * @return
+     */
     public double calculateRating() {
         double sum = 0;
         for (Season s : seasons) {
@@ -32,6 +47,7 @@ public class Shows extends Video {
         }
         return sum / numberOfSeasons;
     }
+
     public ArrayList<Season> getSeasons() {
         return seasons;
     }
