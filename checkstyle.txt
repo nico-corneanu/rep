@@ -1,6 +1,6 @@
 Starting audit...
-[ERROR] D:\Tema-POO-2020\.\src\classes\Action.java:194:5: Method length is 1,051 lines (max allowed is 150). [MethodLength]
-[ERROR] D:\Tema-POO-2020\.\src\classes\Action.java:935:39: Name 'num_ratings' must match pattern '^[a-z][a-zA-Z0-9]*$'. [LocalVariableName]
+[ERROR] D:\Tema-POO-2020\.\src\classes\Action.java:194:5: Method length is 1,157 lines (max allowed is 150). [MethodLength]
+[ERROR] D:\Tema-POO-2020\.\src\classes\Action.java:1010:39: Name 'num_ratings' must match pattern '^[a-z][a-zA-Z0-9]*$'. [LocalVariableName]
 [ERROR] D:\Tema-POO-2020\.\src\classes\MyPair.java:6:19: Variable 'name' must be private and have accessor methods. [VisibilityModifier]
 [ERROR] D:\Tema-POO-2020\.\src\classes\MyPair.java:7:19: Variable 'value' must be private and have accessor methods. [VisibilityModifier]
 [ERROR] D:\Tema-POO-2020\.\src\classes\MyPair.java:14:38: Variable 'ratingCompareASC' must be private and have accessor methods. [VisibilityModifier]

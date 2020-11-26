@@ -10,8 +10,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static classes.MyPair.ratingCompareDES;
 import static utils.Utils.stringToGenre;
@@ -65,9 +63,10 @@ public final class Action {
     /**
      * Filters used for selecting videos
      */
+    //the list of lists of filters
     private List<List<String>> filters;
-
-    //recomandari
+    //three constructors for three types of actions
+    //recommandations
     public Action(final int actionId, final String actionType,
                   final String type, final String username, final String genre) {
         this.actionId = actionId;
@@ -122,7 +121,6 @@ public final class Action {
     }
 
     // getters
-
     public int getActionId() {
         return actionId;
     }
@@ -191,10 +189,17 @@ public final class Action {
      * @param shows
      * @param actors
      */
+    //in the function below, I have approached the 3 action types,
+    //with their corespondent subtypes
     public void doAction(final JSONArray result, final ArrayList<Movies> movies,
                                final ArrayList<User> users, final ArrayList<Shows> shows,
                                final ArrayList<Actors> actors) {
         if (actionType.equals("command")) {
+            //for favorite command, I verify if the history
+            //of the user contains the title that I want to add
+            //if it doesn't, I add the title
+            //if the history doesn't contain the title,
+            //it has not been seen yet by the user
             if (type.equals("favorite")) {
                 for (User u : users) {
                     if (u.getUsername().equals(username)) {
@@ -223,6 +228,9 @@ public final class Action {
                         }
                     }
                 }
+                //for view, if the movie is already in view list,
+                //I increment the number of views
+                //if it isn't, I add it
             } else if (type.equals("view")) {
                 for (User u : users) {
                     if (u.getUsername().equals(username)) {
@@ -236,7 +244,11 @@ public final class Action {
 
                     }
                 }
+                //for rating, there are two cases: movie or show
             } else if (type.equals("rating")) {
+                //if the field seasonNumber is null,
+                //it means that the video is a movie, as it
+                //does not have any seasons
                 if (seasonNumber == 0) {
                     //this is a movie
                     for (User u : users) {
@@ -269,6 +281,7 @@ public final class Action {
                         }
                     }
                 } else {
+                    //this is a show
                     for (User u : users) {
                         if (u.getUsername().equals(username)) {
                             for (Shows s : shows) {
@@ -301,8 +314,12 @@ public final class Action {
                     }
                 }
             }
+            //if the action wanted is of type query
         } else if (actionType.equals("query")) {
+            //if the query is of actors
             if (objectType.equals("actors")) {
+                //if there aren't any actors,
+                //an empty result is given
                 if (actors.size() == 0) {
                     JSONObject message = new JSONObject();
                     message.put("id", actionId);
@@ -310,6 +327,11 @@ public final class Action {
                     result.add(message);
                 } else {
                     if (criteria.equals("average")) {
+                        //i'm using an array of type MyPair in order to
+                        //easily sort the actors acording to the rating
+                        //in the array, the name of the actor is associated with
+                        //the rating of all the videos they got in their filmography
+                        //and is sorted with the Comparator methods from MyPair
                         ArrayList<MyPair> averages = new ArrayList<>();
                         for (Actors a : actors) {
                             double sum = 0;
@@ -332,12 +354,16 @@ public final class Action {
                                 averages.add(new MyPair(a.getName(), sum / div));
                             }
                         }
-                        Collections.sort(averages, MyPair.nameCompare);
+                        //firstly, the pairs are sorted alphabetically, then
+                        //according to the sortType
                         if (sortType.equals("asc")) {
+                            Collections.sort(averages, MyPair.nameCompare);
                             Collections.sort(averages, MyPair.ratingCompareASC);
                         } else {
+                            Collections.sort(averages, MyPair.nameCompareDesc);
                             Collections.sort(averages, ratingCompareDES);
                         }
+                        //display the N given number of actors
                         String queryMessage = "Query result: [";
                         for (int i = 0; i < averages.size(); ++i) {
                             if (i < number) {
@@ -353,11 +379,17 @@ public final class Action {
                         message.put("message", queryMessage);
                         result.add(message);
                     } else if (criteria.equals("awards")) {
+                        //similar to the task above, I use pairs
+                        //to help me in sorting the actors
                         ArrayList<MyPair> awardsPairs = new ArrayList<>();
                         int count1 = 0;
                         int count2 = 0;
                         Integer sum = 0;
                         for (Actors a : actors) {
+                            //I go through all the filters,
+                            //and through all the awards of an actor
+                            //and verify if all the filter awards exists in the
+                            //list of awards of that actor by using two counters
                             for (List<String> list : getFilters()) {
                                 if (list == null) {
                                     continue;
@@ -374,6 +406,9 @@ public final class Action {
                                     }
                                 }
                             }
+                            //this means that all of the filters are found
+                            //I store how many awards the actors has
+                            //in order to sort the actors by that value
                             if (count1 == count2) {
                                 for (Map.Entry<ActorsAwards, Integer>
                                         entry : a.getAwards().entrySet()) {
@@ -387,6 +422,8 @@ public final class Action {
                             }
                             sum = 0;
                         }
+                        //firstly, I sort the pairs by the name of the actors,
+                        //then by the sum of awards, according to the sortType
                         if (sortType.equals("asc")) {
                             Collections.sort(awardsPairs, MyPair.nameCompare);
                         } else {
@@ -402,6 +439,8 @@ public final class Action {
                         for (int i = 0; i < awardsPairs.size(); ++i) {
                             queryMessage += awardsPairs.get(i).name + ", ";
                         }
+                        //if the result will be an empty query,
+                        //I do not change the queryMessage
                         if (awardsPairs.size() == 0) {
                             queryMessage = queryMessage.substring(0, queryMessage.length());
                         } else {
@@ -418,6 +457,10 @@ public final class Action {
                         int count1 = 0;
                         int count2 = 0;
                         for (Actors a : actors) {
+                            //similar to the task above,
+                            //I use two counters in order to verify if
+                            //the career description of an actor contains
+                            //all the keywords found in the list of given filters
                             for (List<String> list : getFilters()) {
                                 if (list == null) {
                                     continue;
@@ -431,6 +474,9 @@ public final class Action {
                                     }
                                 }
                             }
+                            //if all the keywords are found, we add the coresponding pair
+                            //with the value 0, as we do not need any other information
+                            //than the name of the actor for the sorting
                             if (count1 == count2) {
                                 descriptionPairs.add(new MyPair(a.getName(), 0));
                             }
@@ -459,31 +505,45 @@ public final class Action {
                         result.add(message);
                     }
                 }
-
+                //for the video queries, I implement both of the
+                //possible cases: movies and shows
             } else if (objectType.equals("movies")) {
                 if (criteria.equals("ratings")) {
                     ArrayList<MyPair> ratingsPairs = new ArrayList<>();
                     int count1 = 0, count2 = 0;
                     for (Movies m : movies) {
+                        //only if the movie does have a rating
                         if (!m.getRating().isNaN()) {
+                            //in order to verify if both the year and the genre
+                            //filters do apply to the given movie
+                            //I use two boolean values
+                            boolean flagYear = true;
+                            boolean flagGen = true;
                             for (List<String> list : getFilters()) {
                                 if (list != null) {
-                                    for (String s : list) {
-                                        if ((m.getGenres().contains(s))) {
-                                            count1++;
+                                    //if the first filter, year, is not null,
+                                    //I make its conversion to int, in order to
+                                    //compare it to the movie's year
+                                    //if they're not equal, I make the year flag false
+                                    if (list.equals(getFilters().get(0)) && list.get(0) != null) {
+                                        int theYear = Integer.parseInt(list.get(0));
+                                        if (m.getYear() != theYear) {
+                                            flagYear = false;
                                         }
-                                        Pattern p = Pattern.compile("([0-9])");
-                                        Matcher matcher = p.matcher(s);
-                                        if (matcher.find()) {
-                                            number = Integer.parseInt(s);
-                                            if (number == m.getYear()) {
-                                                count2++;
+                                        //if there is no year filter or if the year condition
+                                        //is accomplished
+                                    } else if (flagYear) {
+                                        for (int i = 0; i < list.size(); ++i) {
+                                            if (list.get(i) != null) {
+                                                if (!m.getGenres().contains(list.get(i))) {
+                                                    flagGen = false;
+                                                }
                                             }
                                         }
                                     }
                                 }
                             }
-                            if ((count1 > 0) && (count2 > 0)) {
+                            if (flagYear && flagGen) {
                                 ratingsPairs.add(new MyPair(m.getTitle(), m.getRating()));
                             }
                         }
@@ -517,12 +577,17 @@ public final class Action {
                 } else if (criteria.equals("favorite")) {
                     ArrayList<MyPair> favoritePairs = new ArrayList<>();
                     for (Movies m : movies) {
+                        //in order to see how many times a movie
+                        //appears in the list of favorites of the users
+                        //i imcrement numberFavorite for each movie
                         int numberFavorite = 0;
                         for (User u : users) {
                             if (u.getFavoriteMovies().contains(m.getTitle())) {
                                 numberFavorite++;
                             }
                         }
+                        //I use the same method as before to make sure that the
+                        //filters are applied to the given movie
                         boolean flagYear = true;
                         boolean flagGen = true;
                         for (List<String> list : getFilters()) {
@@ -543,6 +608,9 @@ public final class Action {
                                 }
                             }
                         }
+                        //if the movie is found in at least one list of favorites of an
+                        //user
+                        //and if the filters are applied
                         if (numberFavorite > 0) {
                             if (flagYear && flagGen) {
                                 favoritePairs.add(new MyPair(m.getTitle(), numberFavorite));
@@ -576,7 +644,6 @@ public final class Action {
                     result.add(message);
                 } else if (criteria.equals("longest")) {
                     ArrayList<MyPair> longestPairs = new ArrayList<>();
-                    int count1 = 0, count2 = 0, count = 0;
                     for (Movies m : movies) {
                         boolean flagYear = true;
                         boolean flagGen = true;
@@ -598,10 +665,13 @@ public final class Action {
                                 }
                             }
                         }
+                        //using the same approach as before, the value of each pair
+                        //is the movie's duration
                         if (flagYear && flagGen) {
                             longestPairs.add(new MyPair(m.getTitle(), m.getDuration()));
                         }
                     }
+                    //I sort the pairs according to the sortType
                     if (sortType.equals("asc")) {
                         Collections.sort(longestPairs, MyPair.nameCompare);
                         Collections.sort(longestPairs, MyPair.ratingCompareASC);
@@ -630,11 +700,14 @@ public final class Action {
                     result.add(message);
                 } else if (criteria.equals("most_viewed")) {
                     ArrayList<MyPair> mostViewedPairs = new ArrayList<>();
-
                     for (Movies m : movies) {
                         int sum = 0;
                         for (User u : users) {
                             if (u.getHistory().containsKey(m.getTitle())) {
+                                //I take the number of views of a movie
+                                //from the history of an user
+                                //and add it to a sum, which will contain
+                                //how many times it was viewed
                                 for (Map.Entry<String, Integer> entry : u.getHistory().entrySet()) {
                                     sum = entry.getValue();
                                 }
@@ -660,12 +733,14 @@ public final class Action {
                                 }
                             }
                         }
+                        //if it was viewed at least once
                         if (sum > 0) {
                             if (flagYear && flagGen) {
                                 mostViewedPairs.add(new MyPair(m.getTitle(), sum));
                             }
                         }
                     }
+                    //sort the movies according to the sum, by the sortType
                     if (sortType.equals("asc")) {
                         Collections.sort(mostViewedPairs, MyPair.nameCompare);
                         Collections.sort(mostViewedPairs, MyPair.ratingCompareASC);
@@ -692,10 +767,11 @@ public final class Action {
                     message.put("message", queryMessage);
                     result.add(message);
                 }
+                //for the shows, the implementation of the criterias are
+                //very similar to the movies approach
             } else if (objectType.equals("shows")) {
                 if (criteria.equals("ratings")) {
                     ArrayList<MyPair> ratingsPairs = new ArrayList<>();
-                    int count1 = 0, count2 = 0, count = 0;
                     for (Shows s : shows) {
                         boolean flagYear = true;
                         boolean flagGen = true;
@@ -868,7 +944,6 @@ public final class Action {
                     result.add(message);
                 } else if (criteria.equals("most_viewed")) {
                     ArrayList<MyPair> mostViewedPairs = new ArrayList<>();
-
                     for (Shows s : shows) {
                         int sum = 0;
                         for (User u : users) {
@@ -934,6 +1009,9 @@ public final class Action {
                 if (criteria.equals("num_ratings")) {
                     ArrayList<MyPair> num_ratings = new ArrayList<>();
                     for (User u : users) {
+                        //if the user has given any ratings, add the pair
+                        //with his username and the value of his number of
+                        //ratings given
                         if (!u.getRatings().isEmpty()) {
                             num_ratings.add(new MyPair(u.getUsername(), u.getRatings().size()));
                         }
@@ -967,6 +1045,9 @@ public final class Action {
             }
         } else if (actionType.equals("recommendation")) {
             if (type.equals("standard")) {
+                //for the standard recommendation, I use two booleans
+                //in order to verify if the recommendation can be applied
+                //and the type of video: movie of show
                 boolean bool = true;
                 for (User u : users) {
                     if (u.getUsername().equals(username)) {
@@ -984,6 +1065,7 @@ public final class Action {
                             }
                         }
                         for (Shows s : shows) {
+                            //if it is a show
                             if (flag) {
                                 if (!u.getHistory().containsKey(s.getTitle())) {
                                     bool = false;
@@ -996,6 +1078,8 @@ public final class Action {
                                 }
                             }
                         }
+                        //if the previous actions have not given any result
+                        //(the recommendation cannot be applied)
                         if (bool) {
                             JSONObject message = new JSONObject();
                             message.put("id", actionId);
@@ -1010,6 +1094,7 @@ public final class Action {
                 for (User u : users) {
                     if (u.getUsername().equals(username)) {
                         for (Movies m : movies) {
+                            //i verify if the movie isn't already seen by the user
                             if (!u.getHistory().containsKey(m.getTitle())) {
                                 recVideos.add(new MyPair(m.getTitle(), m.getRating()));
                             }
@@ -1019,6 +1104,8 @@ public final class Action {
                                 recVideos.add(new MyPair(s.getTitle(), s.calculateRating()));
                             }
                         }
+                        //I sort the pairs of movies and shows, with their ratings,
+                        //in a descending order by the rating
                         Collections.sort(recVideos, ratingCompareDES);
                         for (int i = 0; i < recVideos.size(); i++) {
                             JSONObject message = new JSONObject();
@@ -1029,6 +1116,8 @@ public final class Action {
                             result.add(message);
                             break;
                         }
+                        //if the list of pairs doesn't have any elements
+                        //the recommendation cannot be applied
                         if (recVideos.size() == 0) {
                             JSONObject message = new JSONObject();
                             message.put("id", actionId);
@@ -1040,9 +1129,15 @@ public final class Action {
                 }
             } else if (type.equals("popular")) {
                 ArrayList<MyPair> popularGenres = new ArrayList<>();
+                //i add all the available genres in a list of pairs
+                //so I can increment their value according to the
+                //number of appearances in the seen movies
                 for (Genre g : Genre.values()) {
                     popularGenres.add(new MyPair(g.name(), 0));
                 }
+                //for all the users, I go through their history and
+                //increment the value of each genre for each movie
+                //I am also using the stringToGenre method from utils package
                 for (User u : users) {
                     for (Map.Entry<String, Integer> entry : u.getHistory().entrySet()) {
                         for (Movies m : movies) {
@@ -1060,11 +1155,14 @@ public final class Action {
                 }
                 boolean bool = true;
                 for (User u : users) {
+                    //if the user is the one for which the recommendation
+                    //has to be made and his subscription type is premium
                     if (u.getUsername().equals(username)
                             && u.getSubscriptionType().equals("PREMIUM")) {
                         Collections.sort(popularGenres, ratingCompareDES);
                         for (int i = 0; i < popularGenres.size(); i++) {
                             for (Movies m : movies) {
+                                //if the movie is not in the users' history
                                 if (!u.getHistory().containsKey(m.getTitle())) {
                                     for (String gen : m.getGenres()) {
                                         if (popularGenres.get(i).
@@ -1102,6 +1200,9 @@ public final class Action {
                                 break;
                             }
                         }
+                        //if the above operations couldn't be made
+                        //the boolean stays true so the recommendation
+                        //cannot be applied
                         if (bool) {
                             JSONObject message = new JSONObject();
                             message.put("id", actionId);
@@ -1110,6 +1211,8 @@ public final class Action {
                             result.add(message);
                         }
                     }
+                    //the recommendation cannot be applied if the subscription
+                    //type is the basic one
                     if (u.getUsername().equals(username)
                             && u.getSubscriptionType().equals("BASIC")) {
                         JSONObject message = new JSONObject();
@@ -1178,6 +1281,8 @@ public final class Action {
 
                 }
                 if (favoriteRec.size() != 0) {
+                    //if the number of times the movie appears in the favorite list of
+                    //users is distinct for the first pairs (the most favorite ones)
                     if (!(favoriteRec.get(0).value == favoriteRec.get(1).value)) {
                         Collections.sort(favoriteRec, ratingCompareDES);
                         JSONObject message = new JSONObject();
@@ -1186,6 +1291,7 @@ public final class Action {
                                 "FavoriteRecommendation result: "
                                         + favoriteRec.get(0).name);
                         result.add(message);
+                        //order from the database
                     } else {
                         JSONObject message = new JSONObject();
                         message.put("id", actionId);
