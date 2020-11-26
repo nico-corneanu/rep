@@ -77,6 +77,7 @@ public final class Main {
      * @param users
      * @param actions
      */
+    //necessary function in order to get data from input provided
     public static void useInput(final Input input, final ArrayList<Actors> actors,
                                 final ArrayList<Movies> movies,
                                 final ArrayList<Shows> shows,
@@ -147,6 +148,8 @@ public final class Main {
         ArrayList<Shows> shows = new ArrayList<>();
         ArrayList<User> users = new ArrayList<>();
         ArrayList<Action> actions = new ArrayList<>();
+        //now, in these variables we have the input data for the actions
+        //given as tasks
         useInput(input, actors, movies, shows, users, actions);
         Writer fileWriter = new Writer(filePath2);
         JSONArray arrayResult = new JSONArray();
@@ -154,8 +157,6 @@ public final class Main {
             o.doAction(arrayResult, movies, users, shows, actors);
         }
         System.out.println(arrayResult);
-        //TODO add here the entry point to your implementation
-
         fileWriter.closeJSON(arrayResult);
     }
 }

@@ -41,15 +41,6 @@ public final class User {
     public ArrayList<String> getFavoriteMovies() {
         return favoriteMovies;
     }
-
-    /**
-     *
-     * @param movie
-     */
-    public void addMovieToFavorite(final String movie) {
-        favoriteMovies.add(movie);
-    }
-
     /**
      *
      * @param movie
@@ -92,8 +83,6 @@ public final class User {
     public int giveRatingShow(final Shows video, final double rating, final int seasonNumber) {
         if (history.containsKey(video.getTitle())) {
             if (!ratings.containsKey(video.getTitle() + seasonNumber)) {
-                System.out.println(video.getTitle());
-                System.out.println(seasonNumber);
                 ratings.put(video.getTitle(), rating);
                 video.getSeasons().get(seasonNumber - 1).getRatings().add(rating);
                 return 1;

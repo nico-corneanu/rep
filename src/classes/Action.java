@@ -16,53 +16,17 @@ import static utils.Utils.stringToGenre;
 
 public final class Action {
     private int actionId;
-    /**
-     * Type of action
-     */
     private String actionType;
-    /**
-     * Used for commands
-     */
     private String type;
-    /**
-     * Username of user
-     */
     private String username;
-    /**
-     * The type of object on which the actions will be performed
-     */
     private String objectType;
-    /**
-     * Sorting type: ascending or descending
-     */
     private String sortType;
-    /**
-     * The criterion according to which the sorting will be performed
-     */
     private String criteria;
-    /**
-     * Video title
-     */
     private String title;
-    /**
-     * Video genre
-     */
     private String genre;
-    /**
-     * Query limit
-     */
     private int number;
-    /**
-     * Grade for rating - aka value of the rating
-     */
     private double grade;
-    /**
-     * Season number
-     */
     private int seasonNumber;
-    /**
-     * Filters used for selecting videos
-     */
     //the list of lists of filters
     private List<List<String>> filters;
     //three constructors for three types of actions
@@ -1349,24 +1313,5 @@ public final class Action {
                 }
             }
         }
-    }
-
-    @Override
-    public String toString() {
-        return "ActionInputData{"
-                + "actionId=" + actionId
-                + ", actionType='" + actionType + '\''
-                + ", type='" + type + '\''
-                + ", username='" + username + '\''
-                + ", objectType='" + objectType + '\''
-                + ", sortType='" + sortType + '\''
-                + ", criteria='" + criteria + '\''
-                + ", title='" + title + '\''
-                + ", genre='" + genre + '\''
-                + ", number=" + number
-                + ", grade=" + grade
-                + ", seasonNumber=" + seasonNumber
-                + ", filters=" + filters
-                + '}' + "\n";
     }
 }

@@ -47,13 +47,4 @@ public final class Actors {
     public void setCareerDescription(final String careerDescription) {
         this.careerDescription = careerDescription;
     }
-
-    @Override
-    public String toString() {
-        return "ActorInputData{"
-                + "name='" + name + '\''
-                + ", careerDescription='"
-                + careerDescription + '\''
-                + ", filmography=" + filmography + '}';
-    }
 }

@@ -38,15 +38,5 @@ public final class Season {
     public void setRatings(final List<Double> ratings) {
         this.ratings = ratings;
     }
-
-    @Override
-    public String toString() {
-        return "Episode{"
-                + "currentSeason="
-                + currentSeason
-                + ", duration="
-                + duration
-                + '}';
-    }
 }
 
