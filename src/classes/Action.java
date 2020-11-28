@@ -1,15 +1,12 @@
 package classes;
 
+import java.util.*;
+
 import actor.ActorsAwards;
 import entertainment.Genre;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 
 import static classes.MyPair.ratingCompareDES;
 import static utils.Utils.stringToGenre;
@@ -29,6 +26,7 @@ public final class Action {
     private int seasonNumber;
     //the list of lists of filters
     private List<List<String>> filters;
+
     //three constructors for three types of actions
     //recommandations
     public Action(final int actionId, final String actionType,
@@ -156,8 +154,9 @@ public final class Action {
     //in the function below, I have approached the 3 action types,
     //with their corespondent subtypes
     public void doAction(final JSONArray result, final ArrayList<Movies> movies,
-                               final ArrayList<User> users, final ArrayList<Shows> shows,
-                               final ArrayList<Actors> actors) {
+                         final ArrayList<User> users, final ArrayList<Shows> shows,
+                         final ArrayList<Actors> actors) {
+
         if (actionType.equals("command")) {
             //for favorite command, I verify if the history
             //of the user contains the title that I want to add
@@ -302,7 +301,7 @@ public final class Action {
                             int div = 0;
                             for (String video : a.getFilmography()) {
                                 for (Movies m : movies) {
-                                    if (m.getTitle().equals(video)) {
+                                    if (m.getTitle().equals(video) && !m.getRating().isNaN()) {
                                         sum += m.getRating();
                                         div++;
                                     }
@@ -323,6 +322,7 @@ public final class Action {
                         if (sortType.equals("asc")) {
                             Collections.sort(averages, MyPair.nameCompare);
                             Collections.sort(averages, MyPair.ratingCompareASC);
+
                         } else {
                             Collections.sort(averages, MyPair.nameCompareDesc);
                             Collections.sort(averages, ratingCompareDES);
@@ -342,6 +342,7 @@ public final class Action {
                         message.put("id", actionId);
                         message.put("message", queryMessage);
                         result.add(message);
+
                     } else if (criteria.equals("awards")) {
                         //similar to the task above, I use pairs
                         //to help me in sorting the actors
@@ -432,7 +433,13 @@ public final class Action {
                                 for (String s : list) {
                                     if (s != null) {
                                         count1++;
-                                        if (a.getCareerDescription().contains(s)) {
+                                        //I split the career description
+                                        // into words by spaces and other characters
+                                        //and see if the given word by filters
+                                        // identifies with a word from the
+                                        //list after splitting
+                                        if (Arrays.asList(a.getCareerDescription().toLowerCase().
+                                                split("[ ,?!.-]+")).contains(s)) {
                                             count2++;
                                         }
                                     }
@@ -477,7 +484,7 @@ public final class Action {
                     int count1 = 0, count2 = 0;
                     for (Movies m : movies) {
                         //only if the movie does have a rating
-                        if (!m.getRating().isNaN()) {
+                        if (!m.getRating().isNaN() && m.getRating() != 0) {
                             //in order to verify if both the year and the genre
                             //filters do apply to the given movie
                             //I use two boolean values
@@ -673,7 +680,9 @@ public final class Action {
                                 //and add it to a sum, which will contain
                                 //how many times it was viewed
                                 for (Map.Entry<String, Integer> entry : u.getHistory().entrySet()) {
-                                    sum = entry.getValue();
+                                    if (entry.getKey().equals(m.getTitle())) {
+                                        sum += entry.getValue();
+                                    }
                                 }
                             }
                         }
@@ -913,7 +922,9 @@ public final class Action {
                         for (User u : users) {
                             if (u.getHistory().containsKey(s.getTitle())) {
                                 for (Map.Entry<String, Integer> entry : u.getHistory().entrySet()) {
-                                    sum = entry.getValue();
+                                    if (entry.getKey().equals(s.getTitle())) {
+                                        sum += entry.getValue();
+                                    }
                                 }
                             }
                         }
@@ -1054,43 +1065,64 @@ public final class Action {
                     }
                 }
             } else if (type.equals("best_unseen")) {
+                //i make a boolean to check if the
+                //user has already seen every video
+                //in order to print the cannot apply recommendation
+                //message
+                boolean seenEverything = true;
                 ArrayList<MyPair> recVideos = new ArrayList<>();
+                ArrayList<String> unseenTitles = new ArrayList<>();
                 for (User u : users) {
                     if (u.getUsername().equals(username)) {
                         for (Movies m : movies) {
                             //i verify if the movie isn't already seen by the user
                             if (!u.getHistory().containsKey(m.getTitle())) {
-                                recVideos.add(new MyPair(m.getTitle(), m.getRating()));
+                                seenEverything = false;
+                                if (!m.getRating().isNaN() && m.getRating() != 0) {
+                                    recVideos.add(new MyPair(m.getTitle(), m.getRating()));
+                                } else {
+                                    unseenTitles.add(m.getTitle());
+                                }
                             }
                         }
                         for (Shows s : shows) {
                             if (!u.getHistory().containsKey(s.getTitle())) {
-                                recVideos.add(new MyPair(s.getTitle(), s.calculateRating()));
+                                seenEverything = false;
+                                if (!s.getRating().isNaN()) {
+                                    recVideos.add(new MyPair(s.getTitle(), s.calculateRating()));
+                                } else {
+                                    unseenTitles.add(s.getTitle());
+                                }
                             }
                         }
-                        //I sort the pairs of movies and shows, with their ratings,
-                        //in a descending order by the rating
-                        Collections.sort(recVideos, ratingCompareDES);
-                        for (int i = 0; i < recVideos.size(); i++) {
-                            JSONObject message = new JSONObject();
-                            message.put("id", actionId);
-                            message.put("message",
-                                    "BestRatedUnseenRecommendation result: "
-                                            + recVideos.get(0).name);
-                            result.add(message);
-                            break;
-                        }
-                        //if the list of pairs doesn't have any elements
-                        //the recommendation cannot be applied
-                        if (recVideos.size() == 0) {
+                        if (seenEverything) {
                             JSONObject message = new JSONObject();
                             message.put("id", actionId);
                             message.put("message",
                                     "BestRatedUnseenRecommendation cannot be applied!");
                             result.add(message);
+                        } else {
+                            if (recVideos.size() == 0) {
+                                JSONObject message = new JSONObject();
+                                message.put("id", actionId);
+                                message.put("message",
+                                        "BestRatedUnseenRecommendation result: "
+                                                + unseenTitles.get(0));
+                                result.add(message);
+                            } else {
+                                Collections.sort(recVideos, ratingCompareDES);
+                                JSONObject message = new JSONObject();
+                                message.put("id", actionId);
+                                message.put("message",
+                                        "BestRatedUnseenRecommendation result: "
+                                                + recVideos.get(0).name);
+                                result.add(message);
+                            }
                         }
                     }
                 }
+
+
             } else if (type.equals("popular")) {
                 ArrayList<MyPair> popularGenres = new ArrayList<>();
                 //i add all the available genres in a list of pairs
@@ -1118,6 +1150,7 @@ public final class Action {
                     }
                 }
                 boolean bool = true;
+                boolean endLoop = false;
                 for (User u : users) {
                     //if the user is the one for which the recommendation
                     //has to be made and his subscription type is premium
@@ -1138,9 +1171,15 @@ public final class Action {
                                                     "PopularRecommendation result: "
                                                             + m.getTitle());
                                             result.add(message);
+                                            endLoop = true;
+                                        }
+                                        if (endLoop) {
                                             break;
                                         }
                                     }
+                                }
+                                if (endLoop) {
+                                    break;
                                 }
                             }
                             for (Shows s : shows) {
@@ -1155,12 +1194,18 @@ public final class Action {
                                                     "PopularRecommendation result: "
                                                             + s.getTitle());
                                             result.add(message);
+                                            endLoop = true;
+                                        }
+                                        if (endLoop) {
                                             break;
                                         }
-                                        break;
                                     }
+                                }
+                                if (endLoop) {
                                     break;
                                 }
+                            }
+                            if (endLoop) {
                                 break;
                             }
                         }
@@ -1194,7 +1239,7 @@ public final class Action {
                     boolean bool = false;
                     for (User u : users) {
                         if (!(u.getUsername().equals(username))) {
-                            if (u.getFavoriteMovies().contains(m)) {
+                            if (u.getFavoriteMovies().contains(m.getTitle())) {
                                 numberFav++;
                             }
                         }
@@ -1215,13 +1260,14 @@ public final class Action {
                     if (bool) {
                         favoriteRec.add(new MyPair(m.getTitle(), numberFav));
                     }
+
                 }
                 for (Shows s : shows) {
                     int numberFav = 0;
                     boolean bool = false;
                     for (User u : users) {
                         if (!(u.getUsername().equals(username))) {
-                            if (u.getFavoriteMovies().contains(s)) {
+                            if (u.getFavoriteMovies().contains(s.getTitle())) {
                                 numberFav++;
                             }
                         }
@@ -1278,6 +1324,9 @@ public final class Action {
                         for (Movies m : movies) {
                             if (!u.getHistory().containsKey(m.getTitle())) {
                                 if (m.getGenres().contains(genre)) {
+                                    if (m.getRating().isNaN()) {
+                                        m.setRating(0);
+                                    }
                                     searchRec.add(new MyPair(m.getTitle(), m.getRating()));
                                 }
                             }
@@ -1313,5 +1362,24 @@ public final class Action {
                 }
             }
         }
+    }
+
+    @Override
+    public String toString() {
+        return "ActionInputData{"
+                + "actionId=" + actionId
+                + ", actionType='" + actionType + '\''
+                + ", type='" + type + '\''
+                + ", username='" + username + '\''
+                + ", objectType='" + objectType + '\''
+                + ", sortType='" + sortType + '\''
+                + ", criteria='" + criteria + '\''
+                + ", title='" + title + '\''
+                + ", genre='" + genre + '\''
+                + ", number=" + number
+                + ", grade=" + grade
+                + ", seasonNumber=" + seasonNumber
+                + ", filters=" + filters
+                + '}' + "\n";
     }
 }

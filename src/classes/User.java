@@ -41,8 +41,15 @@ public final class User {
     public ArrayList<String> getFavoriteMovies() {
         return favoriteMovies;
     }
+
     /**
-     *
+     * @param movie
+     */
+    public void addMovieToFavorite(final String movie) {
+        favoriteMovies.add(movie);
+    }
+
+    /**
      * @param movie
      */
     public void view(final String movie) {
@@ -55,7 +62,6 @@ public final class User {
     }
 
     /**
-     *
      * @param video
      * @param rating
      * @return
@@ -74,7 +80,6 @@ public final class User {
     }
 
     /**
-     *
      * @param video
      * @param rating
      * @param seasonNumber
@@ -83,7 +88,7 @@ public final class User {
     public int giveRatingShow(final Shows video, final double rating, final int seasonNumber) {
         if (history.containsKey(video.getTitle())) {
             if (!ratings.containsKey(video.getTitle() + seasonNumber)) {
-                ratings.put(video.getTitle(), rating);
+                ratings.put(video.getTitle() + seasonNumber, rating);
                 video.getSeasons().get(seasonNumber - 1).getRatings().add(rating);
                 return 1;
             } else {

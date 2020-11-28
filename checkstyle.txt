@@ -1,6 +1,7 @@
 Starting audit...
-[ERROR] D:\Tema-POO-2020\.\src\classes\Action.java:158:5: Method length is 1,157 lines (max allowed is 150). [MethodLength]
-[ERROR] D:\Tema-POO-2020\.\src\classes\Action.java:974:39: Name 'num_ratings' must match pattern '^[a-z][a-zA-Z0-9]*$'. [LocalVariableName]
+[ERROR] D:\Tema-POO-2020\.\src\classes\Action.java:3:17: Using the '.*' form of import should be avoided - java.util.*. [AvoidStarImport]
+[ERROR] D:\Tema-POO-2020\.\src\classes\Action.java:156:5: Method length is 1,208 lines (max allowed is 150). [MethodLength]
+[ERROR] D:\Tema-POO-2020\.\src\classes\Action.java:985:39: Name 'num_ratings' must match pattern '^[a-z][a-zA-Z0-9]*$'. [LocalVariableName]
 [ERROR] D:\Tema-POO-2020\.\src\classes\MyPair.java:6:19: Variable 'name' must be private and have accessor methods. [VisibilityModifier]
 [ERROR] D:\Tema-POO-2020\.\src\classes\MyPair.java:7:19: Variable 'value' must be private and have accessor methods. [VisibilityModifier]
 [ERROR] D:\Tema-POO-2020\.\src\classes\MyPair.java:13:38: Variable 'ratingCompareASC' must be private and have accessor methods. [VisibilityModifier]
@@ -24,4 +25,4 @@ Starting audit...
 [ERROR] D:\Tema-POO-2020\.\src\fileio\UserInputData.java:83:77: Parameter s should be final. [FinalParameters]
 [ERROR] D:\Tema-POO-2020\.\src\main\Main.java:12:14: Using the '.*' form of import should be avoided - fileio.*. [AvoidStarImport]
 Audit done.
-Checkstyle ends with 24 errors.
+Checkstyle ends with 25 errors.
